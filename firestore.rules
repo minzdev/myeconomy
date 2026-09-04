@@ -10,8 +10,12 @@ service cloud.firestore {
       allow read, write: if isOwner(uid);
 
       match /transactions/{trxId} {
-        allow read, write: if isOwner(uid)
-          && (!('amount' in request.resource.data) || request.resource.data.amount > 0);
+        // read dipisah: request.resource hanya ada saat write,
+        // memakainya di read membuat get/list selalu ditolak
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.amount > 0;
+        allow delete: if isOwner(uid);
       }
 
       match /categories/{catId} {
