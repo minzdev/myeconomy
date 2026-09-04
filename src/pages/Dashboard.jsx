@@ -7,6 +7,7 @@ import { listCategories } from '../lib/categories.js'
 import { listWallets, calcWalletBalances, walletName } from '../lib/wallets.js'
 import { formatIDR, monthKey } from '../lib/currency.js'
 import { BrutalButton, BrutalCard, EmptyState, Loading } from '../components/ui.jsx'
+import { friendlyDbError } from '../lib/errors.js'
 import TransactionForm from '../components/TransactionForm.jsx'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
@@ -16,6 +17,7 @@ export default function Dashboard() {
   const qc = useQueryClient()
   const [month, setMonth] = useState(monthKey())
   const [showForm, setShowForm] = useState(null)
+  const [submitErr, setSubmitErr] = useState('')
 
   const { data: all = [], isLoading } = useQuery(['tx', uid], () => listTransactions(uid))
   const { data: cats = [] } = useQuery(['cats', uid], () => listCategories(uid))
@@ -29,9 +31,14 @@ export default function Dashboard() {
   const catName = (id) => cats.find((c) => c.id === id)?.name || id
 
   const handleAdd = async (payload) => {
-    await addTransaction(uid, payload)
-    qc.invalidateQueries(['tx', uid])
-    setShowForm(null)
+    setSubmitErr('')
+    try {
+      await addTransaction(uid, payload)
+      qc.invalidateQueries(['tx', uid])
+      setShowForm(null)
+    } catch (e2) {
+      setSubmitErr(friendlyDbError(e2))
+    }
   }
 
   return (
@@ -93,6 +100,7 @@ export default function Dashboard() {
 
       {showForm && (
         <BrutalCard color="bg-white" className="p-4 sm:p-5">
+          {submitErr && <p role="alert" className="text-sm font-bold bg-red-300 border-2 border-black rounded-lg p-2 mb-3">{submitErr}</p>}
           <TransactionForm categories={cats} wallets={wallets} initial={showForm} onSubmit={handleAdd} onCancel={() => setShowForm(null)} />
         </BrutalCard>
       )}

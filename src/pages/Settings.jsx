@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from 'react-query'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { listCategories, addCategory, removeCategory } from '../lib/categories.js'
 import { BrutalButton, BrutalCard, BrutalInput, BrutalSelect, Loading } from '../components/ui.jsx'
+import { friendlyDbError } from '../lib/errors.js'
 
 export default function Settings() {
   const { user } = useAuth()
@@ -10,6 +11,7 @@ export default function Settings() {
   const qc = useQueryClient()
   const [name, setName] = useState('')
   const [type, setType] = useState('expense')
+  const [err, setErr] = useState('')
   const { data: cats = [], isLoading } = useQuery(['cats', uid], () => listCategories(uid))
 
   if (isLoading) return <Loading />
@@ -28,9 +30,14 @@ export default function Settings() {
           onSubmit={async (e) => {
             e.preventDefault()
             if (!name) return
-            await addCategory(uid, { name, type, icon: '📦', color: '#FFF' })
-            setName('')
-            qc.invalidateQueries(['cats', uid])
+            setErr('')
+            try {
+              await addCategory(uid, { name, type, icon: '📦', color: '#FFF' })
+              setName('')
+              qc.invalidateQueries(['cats', uid])
+            } catch (e2) {
+              setErr(friendlyDbError(e2))
+            }
           }}
         >
           <BrutalInput placeholder="Nama kategori" value={name} onChange={(e) => setName(e.target.value)} className="flex-1" />
@@ -41,6 +48,7 @@ export default function Settings() {
           </BrutalSelect>
           <BrutalButton color="bg-black text-white" type="submit">Tambah</BrutalButton>
         </form>
+        {err && <p role="alert" className="text-sm font-bold bg-red-300 border-2 border-black rounded-lg p-2 mt-2">{err}</p>}
       </BrutalCard>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

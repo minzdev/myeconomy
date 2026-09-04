@@ -6,6 +6,7 @@ import { listCategories } from '../lib/categories.js'
 import { listWallets, walletName } from '../lib/wallets.js'
 import { formatIDR, monthKey } from '../lib/currency.js'
 import { BrutalButton, BrutalCard, BrutalInput, BrutalSelect, ConfirmModal, EmptyState, Loading } from '../components/ui.jsx'
+import { friendlyDbError } from '../lib/errors.js'
 import TransactionForm from '../components/TransactionForm.jsx'
 
 function fmtDate(iso) {
@@ -37,6 +38,7 @@ export default function Transactions() {
   const [editing, setEditing] = useState(null)
   const [adding, setAdding] = useState(false)
   const [delId, setDelId] = useState(null)
+  const [submitErr, setSubmitErr] = useState('')
 
   const { data: all = [], isLoading } = useQuery(['tx', uid], () => listTransactions(uid))
   const { data: cats = [] } = useQuery(['cats', uid], () => listCategories(uid))
@@ -81,15 +83,21 @@ export default function Transactions() {
 
       {(adding || editing) && (
         <BrutalCard color="bg-white" className="p-4 sm:p-5">
+          {submitErr && <p role="alert" className="text-sm font-bold bg-red-300 border-2 border-black rounded-lg p-2 mb-3">{submitErr}</p>}
           <TransactionForm
             categories={cats}
             wallets={wallets}
             initial={editing || {}}
             onCancel={() => { setAdding(false); setEditing(null) }}
             onSubmit={async (p) => {
-              if (editing) await updateTransaction(uid, editing.id, p)
-              else await addTransaction(uid, p)
-              setAdding(false); setEditing(null); refresh()
+              setSubmitErr('')
+              try {
+                if (editing) await updateTransaction(uid, editing.id, p)
+                else await addTransaction(uid, p)
+                setAdding(false); setEditing(null); refresh()
+              } catch (e2) {
+                setSubmitErr(friendlyDbError(e2))
+              }
             }}
           />
         </BrutalCard>

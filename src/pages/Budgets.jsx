@@ -6,6 +6,7 @@ import { listTransactions, filterTx } from '../lib/transactions.js'
 import { listCategories } from '../lib/categories.js'
 import { formatIDR, monthKey } from '../lib/currency.js'
 import { BrutalButton, BrutalCard, BrutalInput, BrutalSelect, Loading } from '../components/ui.jsx'
+import { friendlyDbError } from '../lib/errors.js'
 
 export default function Budgets() {
   const { user } = useAuth()
@@ -14,6 +15,7 @@ export default function Budgets() {
   const [month, setMonth] = useState(monthKey())
   const [catId, setCatId] = useState('')
   const [limit, setLimit] = useState('')
+  const [err, setErr] = useState('')
 
   const { data: budgets = [], isLoading } = useQuery(['budgets', uid, month], () => listBudgets(uid, month))
   const { data: all = [] } = useQuery(['tx', uid], () => listTransactions(uid))
@@ -38,8 +40,13 @@ export default function Budgets() {
           onSubmit={async (e) => {
             e.preventDefault()
             if (!catId || !limit) return
-            await upsertBudget(uid, { categoryId: catId, month, limit })
-            setCatId(''); setLimit(''); refresh()
+            setErr('')
+            try {
+              await upsertBudget(uid, { categoryId: catId, month, limit })
+              setCatId(''); setLimit(''); refresh()
+            } catch (e2) {
+              setErr(friendlyDbError(e2))
+            }
           }}
         >
           <BrutalSelect value={catId} onChange={(e) => setCatId(e.target.value)} className="flex-1">
@@ -51,6 +58,7 @@ export default function Budgets() {
           <BrutalInput type="number" placeholder="Limit Rp" value={limit} onChange={(e) => setLimit(e.target.value)} className="flex-1" />
           <BrutalButton color="bg-black text-white" type="submit">Simpan</BrutalButton>
         </form>
+        {err && <p role="alert" className="text-sm font-bold bg-red-300 border-2 border-black rounded-lg p-2 mt-2">{err}</p>}
       </BrutalCard>
 
       <div className="space-y-2">

@@ -17,9 +17,28 @@ export function BrutalInput({ className = '', ...props }) {
 
 export function BrutalSelect({ className = '', children, ...props }) {
   return (
-    <select className={`input-brutal ${className}`} {...props}>
-      {children}
-    </select>
+    <span className={`relative inline-block w-full ${className}`}>
+      <select
+        {...props}
+        className="input-brutal appearance-none pr-10 min-h-[44px] font-bold cursor-pointer bg-white"
+      >
+        {children}
+      </select>
+      <svg
+        aria-hidden="true"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+      >
+        <path d="m6 9 6 6 6-6" />
+      </svg>
+    </span>
   )
 }
 

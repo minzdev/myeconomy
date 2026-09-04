@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext.jsx'
 import { listWallets, addWallet, updateWallet, removeWallet, calcWalletBalances, walletTypeLabel, WALLET_TYPES } from '../lib/wallets.js'
 import { listTransactions } from '../lib/transactions.js'
 import { formatIDR } from '../lib/currency.js'
+import { friendlyDbError } from '../lib/errors.js'
 import { BrutalButton, BrutalCard, BrutalInput, BrutalSelect, ConfirmModal, EmptyState, Loading } from '../components/ui.jsx'
 
 export default function Wallets() {
@@ -36,7 +37,7 @@ export default function Wallets() {
       setInitialBalance('')
       refresh()
     } catch (e2) {
-      setErr(e2.message)
+      setErr(friendlyDbError(e2))
     }
   }
 
@@ -48,7 +49,7 @@ export default function Wallets() {
       setEditing(null)
       refresh()
     } catch (e2) {
-      setErr(e2.message)
+      setErr(friendlyDbError(e2))
     }
   }
 
