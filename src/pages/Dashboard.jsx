@@ -101,7 +101,7 @@ export default function Dashboard() {
       {showForm && (
         <BrutalCard color="bg-white" className="p-4 sm:p-5">
           {submitErr && <p role="alert" className="text-sm font-bold bg-red-300 border-2 border-black rounded-lg p-2 mb-3">{submitErr}</p>}
-          <TransactionForm categories={cats} wallets={wallets} initial={showForm} onSubmit={handleAdd} onCancel={() => setShowForm(null)} />
+          <TransactionForm key={showForm.type} categories={cats} wallets={wallets} initial={showForm} onSubmit={handleAdd} onCancel={() => setShowForm(null)} />
         </BrutalCard>
       )}
 

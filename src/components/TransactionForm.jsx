@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BrutalButton, BrutalInput, BrutalSelect } from './ui.jsx'
+import { BrutalButton, BrutalInput, BrutalSelect, CurrencyInput } from './ui.jsx'
 import { toDateInputValue } from '../lib/currency.js'
 
 export default function TransactionForm({ categories, wallets = [], initial, onSubmit, onCancel }) {
@@ -16,11 +16,25 @@ export default function TransactionForm({ categories, wallets = [], initial, onS
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
 
+  // Ganti tipe: buang kategori lama bila tak cocok agar tak tersangkut diam-diam
+  const pickType = (t) => {
+    setForm((f) => {
+      const stillValid = categories.some((c) => c.id === f.categoryId && (c.type === t || c.type === 'both'))
+      return { ...f, type: t, categoryId: stillValid ? f.categoryId : '' }
+    })
+  }
+
   const submit = (e) => {
     e.preventDefault()
     setErr('')
     if (Number(form.amount) <= 0) return setErr('Nominal harus lebih dari 0')
-    if (!form.categoryId) return setErr('Pilih kategori')
+    if (!form.categoryId) {
+      return setErr(
+        filtered.length === 0
+          ? `Belum ada kategori ${form.type === 'income' ? 'pemasukan' : 'pengeluaran'}. Buat dulu di Pengaturan.`
+          : 'Pilih kategori',
+      )
+    }
     if (!form.walletId) return setErr('Pilih dompet')
     onSubmit({ ...form, amount: Number(form.amount), date: new Date(form.date).toISOString() })
   }
@@ -34,7 +48,7 @@ export default function TransactionForm({ categories, wallets = [], initial, onS
           type="button"
           color={form.type === 'expense' ? 'bg-black text-white' : 'bg-white'}
           className="w-full min-h-[44px] text-sm sm:text-base"
-          onClick={() => set('type', 'expense')}
+          onClick={() => pickType('expense')}
         >
           − Keluar
         </BrutalButton>
@@ -42,38 +56,42 @@ export default function TransactionForm({ categories, wallets = [], initial, onS
           type="button"
           color={form.type === 'income' ? 'bg-black text-white' : 'bg-white'}
           className="w-full min-h-[44px] text-sm sm:text-base"
-          onClick={() => set('type', 'income')}
+          onClick={() => pickType('income')}
         >
           + Masuk
         </BrutalButton>
       </div>
 
-      <BrutalInput
-        type="number"
-        inputMode="numeric"
-        min="1"
-        placeholder="Nominal Rp — cth: 50000"
+      <CurrencyInput
+        placeholder="Nominal — cth: 50.000"
         value={form.amount}
-        onChange={(e) => set('amount', e.target.value)}
+        onChange={(raw) => set('amount', raw)}
         required
-        className="min-h-[44px] text-base"
+        aria-label="Nominal rupiah"
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <BrutalSelect
-          value={form.categoryId}
-          onChange={(e) => set('categoryId', e.target.value)}
-          required
-          className="min-h-[44px]"
-          aria-label="Kategori"
-        >
-          <option value="">-- Kategori --</option>
-          {filtered.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.icon} {c.name}
-            </option>
-          ))}
-        </BrutalSelect>
+        {filtered.length === 0 ? (
+          <p className="text-xs font-bold bg-brutal-cream border-2 border-black rounded-lg p-2 sm:col-span-2">
+            Belum ada kategori {form.type === 'income' ? 'pemasukan' : 'pengeluaran'}.{' '}
+            <Link to="/settings" className="underline underline-offset-2">Buat di Pengaturan →</Link>
+          </p>
+        ) : (
+          <BrutalSelect
+            value={form.categoryId}
+            onChange={(e) => set('categoryId', e.target.value)}
+            required
+            className="min-h-[44px]"
+            aria-label="Kategori"
+          >
+            <option value="">-- Kategori --</option>
+            {filtered.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.icon} {c.name}
+              </option>
+            ))}
+          </BrutalSelect>
+        )}
 
         <BrutalSelect
           value={form.walletId}

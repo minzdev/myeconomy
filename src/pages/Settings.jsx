@@ -5,12 +5,16 @@ import { listCategories, addCategory, removeCategory } from '../lib/categories.j
 import { BrutalButton, BrutalCard, BrutalInput, BrutalSelect, Loading } from '../components/ui.jsx'
 import { friendlyDbError } from '../lib/errors.js'
 
+const CATEGORY_ICONS = ['🍔', '☕', '🛵', '🚗', '🛍️', '🧾', '🏠', '💡', '🎮', '🎬', '💊', '📚', '💰', '🎁', '🏪', '💵', '✈️', '📦']
+const DEFAULT_ICON = { expense: '🍔', income: '💰', both: '📦' }
+
 export default function Settings() {
   const { user } = useAuth()
   const uid = user?.uid || 'demo'
   const qc = useQueryClient()
   const [name, setName] = useState('')
   const [type, setType] = useState('expense')
+  const [icon, setIcon] = useState(DEFAULT_ICON.expense)
   const [err, setErr] = useState('')
   const { data: cats = [], isLoading } = useQuery(['cats', uid], () => listCategories(uid))
 
@@ -26,13 +30,13 @@ export default function Settings() {
       <BrutalCard color="bg-brutal-yellow">
         <h2 className="font-display text-xl">TAMBAH KATEGORI</h2>
         <form
-          className="flex flex-col sm:flex-row gap-2 mt-2"
+          className="space-y-2 mt-3"
           onSubmit={async (e) => {
             e.preventDefault()
-            if (!name) return
+            if (!name.trim()) return
             setErr('')
             try {
-              await addCategory(uid, { name, type, icon: '📦', color: '#FFF' })
+              await addCategory(uid, { name: name.trim(), type, icon, color: '#FFF' })
               setName('')
               qc.invalidateQueries(['cats', uid])
             } catch (e2) {
@@ -40,13 +44,37 @@ export default function Settings() {
             }
           }}
         >
-          <BrutalInput placeholder="Nama kategori" value={name} onChange={(e) => setName(e.target.value)} className="flex-1" />
-          <BrutalSelect value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="expense">Pengeluaran</option>
-            <option value="income">Pemasukan</option>
-            <option value="both">Keduanya</option>
-          </BrutalSelect>
-          <BrutalButton color="bg-black text-white" type="submit">Tambah</BrutalButton>
+          <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Pilih ikon">
+            {CATEGORY_ICONS.map((ic) => (
+              <button
+                key={ic}
+                type="button"
+                role="radio"
+                aria-checked={icon === ic}
+                title={ic}
+                onClick={() => setIcon(ic)}
+                className={`w-11 h-11 text-xl rounded-lg border-2 border-black transition-all ${
+                  icon === ic ? 'bg-black scale-110' : 'bg-white'
+                }`}
+              >
+                {ic}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <BrutalInput placeholder="Nama kategori" value={name} onChange={(e) => setName(e.target.value)} maxLength={30} className="flex-1 min-h-[44px]" />
+            <BrutalSelect
+              value={type}
+              onChange={(e) => { setType(e.target.value); setIcon(DEFAULT_ICON[e.target.value]) }}
+              className="sm:w-44"
+              aria-label="Tipe kategori"
+            >
+              <option value="expense">Pengeluaran</option>
+              <option value="income">Pemasukan</option>
+              <option value="both">Keduanya</option>
+            </BrutalSelect>
+            <BrutalButton color="bg-black text-white" type="submit" className="min-h-[44px]">Tambah</BrutalButton>
+          </div>
         </form>
         {err && <p role="alert" className="text-sm font-bold bg-red-300 border-2 border-black rounded-lg p-2 mt-2">{err}</p>}
       </BrutalCard>

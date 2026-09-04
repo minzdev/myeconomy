@@ -5,7 +5,7 @@ import { listWallets, addWallet, updateWallet, removeWallet, calcWalletBalances,
 import { listTransactions } from '../lib/transactions.js'
 import { formatIDR } from '../lib/currency.js'
 import { friendlyDbError } from '../lib/errors.js'
-import { BrutalButton, BrutalCard, BrutalInput, BrutalSelect, ConfirmModal, EmptyState, Loading } from '../components/ui.jsx'
+import { BrutalButton, BrutalCard, BrutalInput, BrutalSelect, ConfirmModal, CurrencyInput, EmptyState, Loading } from '../components/ui.jsx'
 
 export default function Wallets() {
   const { user } = useAuth()
@@ -77,12 +77,12 @@ export default function Wallets() {
               <option key={t.id} value={t.id}>{t.icon} {t.label}</option>
             ))}
           </BrutalSelect>
-          <BrutalInput
-            type="number"
+          <CurrencyInput
             placeholder="Saldo awal (opsional)"
             value={initialBalance}
-            onChange={(e) => setInitialBalance(e.target.value)}
+            onChange={setInitialBalance}
             className="min-h-[44px]"
+            aria-label="Saldo awal"
           />
           <BrutalButton color="bg-black text-white" type="submit" className="min-h-[44px]">
             Tambah
@@ -106,11 +106,11 @@ export default function Wallets() {
                         <option key={t.id} value={t.id}>{t.label}</option>
                       ))}
                     </BrutalSelect>
-                    <BrutalInput
-                      type="number"
-                      value={editing.initialBalance ?? 0}
-                      onChange={(e) => setEditing({ ...editing, initialBalance: e.target.value })}
+                    <CurrencyInput
+                      value={editing.initialBalance ?? ''}
+                      onChange={(v) => setEditing({ ...editing, initialBalance: v })}
                       className="min-h-[44px]"
+                      aria-label="Saldo awal"
                     />
                   </div>
                   <div className="flex gap-2">

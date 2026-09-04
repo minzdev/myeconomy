@@ -5,7 +5,7 @@ import { listBudgets, upsertBudget, removeBudget } from '../lib/budgets.js'
 import { listTransactions, filterTx } from '../lib/transactions.js'
 import { listCategories } from '../lib/categories.js'
 import { formatIDR, monthKey } from '../lib/currency.js'
-import { BrutalButton, BrutalCard, BrutalInput, BrutalSelect, Loading } from '../components/ui.jsx'
+import { BrutalButton, BrutalCard, BrutalInput, BrutalSelect, CurrencyInput, Loading } from '../components/ui.jsx'
 import { friendlyDbError } from '../lib/errors.js'
 
 export default function Budgets() {
@@ -55,7 +55,7 @@ export default function Budgets() {
               <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
             ))}
           </BrutalSelect>
-          <BrutalInput type="number" placeholder="Limit Rp" value={limit} onChange={(e) => setLimit(e.target.value)} className="flex-1" />
+          <CurrencyInput placeholder="Limit Rp" value={limit} onChange={setLimit} className="flex-1" aria-label="Limit budget" />
           <BrutalButton color="bg-black text-white" type="submit">Simpan</BrutalButton>
         </form>
         {err && <p role="alert" className="text-sm font-bold bg-red-300 border-2 border-black rounded-lg p-2 mt-2">{err}</p>}

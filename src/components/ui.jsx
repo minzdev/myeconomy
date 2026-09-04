@@ -15,6 +15,29 @@ export function BrutalInput({ className = '', ...props }) {
   return <input className={`input-brutal ${className}`} {...props} />
 }
 
+// Input angka Rupiah: ketik digit, tampil otomatis bertitik (1.000.000)
+export function CurrencyInput({ value, onChange, placeholder = '0', className = '', ...props }) {
+  const digits = String(value ?? '').replace(/\D/g, '').slice(0, 15).replace(/^0+(?=\d)/, '')
+  const display = digits ? Number(digits).toLocaleString('id-ID') : ''
+  return (
+    <span className="relative block">
+      <span aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-sm">
+        Rp
+      </span>
+      <input
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        value={display}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 15))}
+        className={`input-brutal min-h-[48px] pl-11 text-base font-bold ${className}`}
+        {...props}
+      />
+    </span>
+  )
+}
+
 export function BrutalSelect({ className = '', children, ...props }) {
   return (
     <span className={`relative block min-w-0 ${className}`}>
