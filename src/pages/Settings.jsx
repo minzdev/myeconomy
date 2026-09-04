@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext.jsx'
 import { listCategories, addCategory, removeCategory } from '../lib/categories.js'
 import { BrutalButton, BrutalCard, BrutalInput, BrutalSelect, Loading } from '../components/ui.jsx'
 import { friendlyDbError } from '../lib/errors.js'
-import { db } from '../lib/firebase.js'
 
 const CATEGORY_ICONS = ['🍔', '☕', '🛵', '🚗', '🛍️', '🧾', '🏠', '💡', '🎮', '🎬', '💊', '📚', '💰', '🎁', '🏪', '💵', '✈️', '📦']
 const DEFAULT_ICON = { expense: '🍔', income: '💰', both: '📦' }
@@ -26,9 +25,6 @@ export default function Settings() {
       <BrutalCard color="bg-white">
         <h2 className="font-display text-2xl">PROFIL</h2>
         <p className="text-sm font-bold mt-1 break-all">{user?.email} {user?.uid === 'demo' && '(Mode Demo - isi Firebase env untuk real)'}</p>
-        <p className="text-xs font-bold mt-1">
-          {db ? `● Terhubung Firestore (${import.meta.env.VITE_FIREBASE_PROJECT_ID})` : '○ Mode demo lokal (env Firebase belum terbaca)'}
-        </p>
       </BrutalCard>
 
       <BrutalCard color="bg-brutal-yellow">
