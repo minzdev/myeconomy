@@ -5,7 +5,7 @@ import { listCategories, addCategory, removeCategory } from '../lib/categories.j
 import { BrutalButton, BrutalCard, BrutalInput, BrutalSelect, Loading } from '../components/ui.jsx'
 import { friendlyDbError } from '../lib/errors.js'
 
-const CATEGORY_ICONS = ['🍔', '☕', '🛵', '🚗', '🛍️', '🧾', '🏠', '💡', '🎮', '🎬', '💊', '📚', '💰', '🎁', '🏪', '💵', '✈️', '📦']
+const CATEGORY_ICONS = ['🍔', '☕', '🛵', '🚗', '🚂', '🛍️', '🏷️', '🧾', '🏠', '💡', '🎮', '🎬', '💊', '📚', '💰', '🎁', '🏪', '💵', '✈️', '📦']
 const DEFAULT_ICON = { expense: '🍔', income: '💰', both: '📦' }
 
 export default function Settings() {
