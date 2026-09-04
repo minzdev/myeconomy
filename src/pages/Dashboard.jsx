@@ -5,11 +5,11 @@ import { useAuth } from '../contexts/AuthContext.jsx'
 import { listTransactions, monthlySummary, addTransaction, filterTx } from '../lib/transactions.js'
 import { listCategories } from '../lib/categories.js'
 import { listWallets, calcWalletBalances, walletName } from '../lib/wallets.js'
-import { formatIDR, monthKey } from '../lib/currency.js'
+import { formatIDR, monthKey, compactIDR } from '../lib/currency.js'
 import { BrutalButton, BrutalCard, EmptyState, Loading } from '../components/ui.jsx'
 import { friendlyDbError } from '../lib/errors.js'
 import TransactionForm from '../components/TransactionForm.jsx'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -119,14 +119,15 @@ export default function Dashboard() {
         {sum.daily.length === 0 ? (
           <EmptyState title="Belum ada transaksi" desc="Klik + Pemasukan / Pengeluaran" />
         ) : (
-          <div className="h-[220px] w-full">
+          <div className="h-[180px] sm:h-[200px] w-full">
             <ResponsiveContainer>
-              <BarChart data={sum.daily}>
-                <XAxis dataKey="date" tickFormatter={(d) => d.slice(8)} fontSize={11} />
-                <YAxis fontSize={11} width={48} />
+              <BarChart data={sum.daily} margin={{ top: 4, right: 4, bottom: 0, left: 0 }} barCategoryGap="30%">
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="date" tickFormatter={(d) => d.slice(8)} fontSize={11} tickLine={false} />
+                <YAxis fontSize={11} width={40} tickFormatter={(v) => compactIDR(v)} tickLine={false} axisLine={false} />
                 <Tooltip formatter={(v) => formatIDR(v)} />
-                <Bar dataKey="income" fill="#23A094" stroke="#000" strokeWidth={1} />
-                <Bar dataKey="expense" fill="#FF6B6B" stroke="#000" strokeWidth={1} />
+                <Bar dataKey="income" fill="#23A094" stroke="#000" strokeWidth={1} maxBarSize={26} />
+                <Bar dataKey="expense" fill="#FF6B6B" stroke="#000" strokeWidth={1} maxBarSize={26} />
               </BarChart>
             </ResponsiveContainer>
           </div>
