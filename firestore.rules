@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper: hanya owner yang bisa akses
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+
+      match /transactions/{trxId} {
+        allow read, write: if isOwner(uid)
+          && (!('amount' in request.resource.data) || request.resource.data.amount > 0);
+      }
+
+      match /categories/{catId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /budgets/{budgetId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /wallets/{walletId} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+  }
+}
