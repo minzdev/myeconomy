@@ -14,5 +14,8 @@ export function monthKey(d = new Date()) {
 
 export function toDateInputValue(d = new Date()) {
   const dt = d instanceof Date ? d : new Date(d)
-  return dt.toISOString().slice(0, 10)
+  const y = dt.getFullYear()
+  const m = String(dt.getMonth() + 1).padStart(2, '0')
+  const day = String(dt.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }

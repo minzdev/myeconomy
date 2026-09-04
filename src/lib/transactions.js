@@ -85,20 +85,16 @@ export function filterTx(list, { month, startDate, endDate, type, categoryId, wa
 
 export async function listTransactions(uid) {
   if (!db || !uid || uid === 'demo') return localAll().sort((a, b) => +new Date(b.date) - +new Date(a.date))
-  try {
-    const col = collection(db, 'users', uid, 'transactions')
-    const snap = await getDocs(query(col, orderBy('date', 'desc')))
-    return snap.docs.map((d) => {
-      const v = d.data()
-      return {
-        id: d.id,
-        ...v,
-        date: v.date?.toDate ? v.date.toDate().toISOString() : v.date,
-      }
-    })
-  } catch {
-    return []
-  }
+  const col = collection(db, 'users', uid, 'transactions')
+  const snap = await getDocs(query(col, orderBy('date', 'desc')))
+  return snap.docs.map((d) => {
+    const v = d.data()
+    return {
+      id: d.id,
+      ...v,
+      date: v.date?.toDate ? v.date.toDate().toISOString() : v.date,
+    }
+  })
 }
 
 export async function addTransaction(uid, data) {

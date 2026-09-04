@@ -39,8 +39,9 @@ export default function Transactions() {
   const [adding, setAdding] = useState(false)
   const [delId, setDelId] = useState(null)
   const [submitErr, setSubmitErr] = useState('')
+  const [savedTick, setSavedTick] = useState(0)
 
-  const { data: all = [], isLoading } = useQuery(['tx', uid], () => listTransactions(uid))
+  const { data: all = [], isLoading, isError, error: readError } = useQuery(['tx', uid], () => listTransactions(uid), { retry: 1 })
   const { data: cats = [] } = useQuery(['cats', uid], () => listCategories(uid))
   const { data: wallets = [] } = useQuery(['wallets', uid], () => listWallets(uid))
   const refresh = () => qc.invalidateQueries(['tx', uid])
@@ -81,6 +82,17 @@ export default function Transactions() {
         </BrutalButton>
       </div>
 
+      {isError && (
+        <p role="alert" className="card-brutal p-4 bg-red-300 font-bold text-sm">
+          Gagal memuat transaksi: {friendlyDbError(readError)}
+        </p>
+      )}
+      {savedTick > 0 && (
+        <p role="status" className="card-brutal p-4 bg-green-300 font-bold text-sm">
+          ✓ Transaksi tersimpan.
+        </p>
+      )}
+
       {(adding || editing) && (
         <BrutalCard color="bg-white" className="p-4 sm:p-5">
           {submitErr && <p role="alert" className="text-sm font-bold bg-red-300 border-2 border-black rounded-lg p-2 mb-3">{submitErr}</p>}
@@ -96,6 +108,8 @@ export default function Transactions() {
                 if (editing) await updateTransaction(uid, editing.id, p)
                 else await addTransaction(uid, p)
                 setAdding(false); setEditing(null); refresh()
+                setSavedTick(Date.now())
+                setTimeout(() => setSavedTick(0), 4000)
               } catch (e2) {
                 setSubmitErr(friendlyDbError(e2))
               }

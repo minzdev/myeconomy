@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [month, setMonth] = useState(monthKey())
   const [showForm, setShowForm] = useState(null)
   const [submitErr, setSubmitErr] = useState('')
+  const [savedTick, setSavedTick] = useState(0)
 
   const { data: all = [], isLoading } = useQuery(['tx', uid], () => listTransactions(uid))
   const { data: cats = [] } = useQuery(['cats', uid], () => listCategories(uid))
@@ -36,6 +37,8 @@ export default function Dashboard() {
       await addTransaction(uid, payload)
       qc.invalidateQueries(['tx', uid])
       setShowForm(null)
+      setSavedTick(Date.now())
+      setTimeout(() => setSavedTick(0), 4000)
     } catch (e2) {
       setSubmitErr(friendlyDbError(e2))
     }
@@ -97,6 +100,12 @@ export default function Dashboard() {
           + Pengeluaran
         </BrutalButton>
       </div>
+
+      {savedTick > 0 && (
+        <p role="status" className="card-brutal p-4 bg-green-300 font-bold text-sm">
+          ✓ Transaksi tersimpan.
+        </p>
+      )}
 
       {showForm && (
         <BrutalCard color="bg-white" className="p-4 sm:p-5">
