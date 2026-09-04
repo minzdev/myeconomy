@@ -17,10 +17,10 @@ export function BrutalInput({ className = '', ...props }) {
 
 export function BrutalSelect({ className = '', children, ...props }) {
   return (
-    <span className={`relative inline-block w-full ${className}`}>
+    <span className={`relative block min-w-0 ${className}`}>
       <select
         {...props}
-        className="input-brutal appearance-none pr-10 min-h-[44px] font-bold cursor-pointer bg-white"
+        className="input-brutal block w-full appearance-none pr-10 min-h-[44px] font-bold cursor-pointer bg-white"
       >
         {children}
       </select>
