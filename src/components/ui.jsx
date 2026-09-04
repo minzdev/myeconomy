@@ -75,11 +75,21 @@ export function EmptyState({ title = 'Belum ada data', desc = '' }) {
   )
 }
 
+import { useRef } from 'react'
+
 // Input bulan gaya brutalist + ikon kalender custom, konsisten di semua halaman
 export function BrutalMonth({ className = '', ...props }) {
+  const ref = useRef(null)
+  const openPicker = () => {
+    try {
+      ref.current?.showPicker?.()
+    } catch {}
+    ref.current?.focus?.()
+  }
   return (
-    <span className={`relative block min-w-0 ${className}`}>
+    <span className={`relative block min-w-0 ${className}`} onClick={openPicker}>
       <input
+        ref={ref}
         type="month"
         {...props}
         className="input-brutal brutal-month block w-full font-bold min-h-[44px] pr-10 cursor-pointer bg-white"
@@ -100,6 +110,21 @@ export function BrutalMonth({ className = '', ...props }) {
         <rect x="3" y="4" width="18" height="18" rx="2" />
       </svg>
     </span>
+  )
+}
+
+// Nominal saldo ala bank: prefix Rp kecil + angka auto-mengecil bila panjang
+export function BalanceAmount({ value, big = false, className = '' }) {
+  const num = Number(value || 0).toLocaleString('id-ID')
+  const digits = num.replace(/\D/g, '').length
+  let size = big ? 'text-3xl sm:text-4xl' : 'text-xl sm:text-2xl'
+  if (digits > 9) size = big ? 'text-2xl sm:text-3xl' : 'text-lg sm:text-xl'
+  if (digits > 12) size = big ? 'text-xl sm:text-2xl' : 'text-base sm:text-lg'
+  return (
+    <p className={`font-display leading-tight break-all ${className}`}>
+      <span className="text-[0.6em] font-bold mr-1">Rp</span>
+      <span className={size}>{num}</span>
+    </p>
   )
 }
 

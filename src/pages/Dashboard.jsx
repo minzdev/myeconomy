@@ -6,7 +6,7 @@ import { listTransactions, monthlySummary, addTransaction, filterTx } from '../l
 import { listCategories } from '../lib/categories.js'
 import { listWallets, calcWalletBalances, walletName } from '../lib/wallets.js'
 import { formatIDR, monthKey, compactIDR } from '../lib/currency.js'
-import { BrutalButton, BrutalCard, BrutalMonth, EmptyState, Loading } from '../components/ui.jsx'
+import { BrutalButton, BrutalCard, BrutalMonth, BalanceAmount, EmptyState, Loading } from '../components/ui.jsx'
 import { friendlyDbError } from '../lib/errors.js'
 import TransactionForm from '../components/TransactionForm.jsx'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
@@ -58,17 +58,17 @@ export default function Dashboard() {
 
       <BrutalCard color="bg-brutal-green" className="p-4 sm:p-5">
         <p className="font-bold text-xs sm:text-sm">TOTAL SALDO BULAN INI</p>
-        <h1 className="font-display text-3xl sm:text-4xl break-words">{formatIDR(sum.balance)}</h1>
+        <BalanceAmount value={sum.balance} big className="mt-1" />
       </BrutalCard>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <BrutalCard color="bg-brutal-blue" className="p-4 sm:p-5">
           <p className="font-bold text-xs sm:text-sm">PEMASUKAN</p>
-          <p className="font-display text-lg sm:text-2xl break-words">{formatIDR(sum.income)}</p>
+          <BalanceAmount value={sum.income} className="mt-1" />
         </BrutalCard>
         <BrutalCard color="bg-brutal-pink" className="p-4 sm:p-5">
           <p className="font-bold text-xs sm:text-sm">PENGELUARAN</p>
-          <p className="font-display text-lg sm:text-2xl break-words">{formatIDR(sum.expense)}</p>
+          <BalanceAmount value={sum.expense} className="mt-1" />
         </BrutalCard>
       </div>
 

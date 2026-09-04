@@ -5,7 +5,7 @@ import { listWallets, addWallet, updateWallet, removeWallet, calcWalletBalances,
 import { listTransactions } from '../lib/transactions.js'
 import { formatIDR } from '../lib/currency.js'
 import { friendlyDbError } from '../lib/errors.js'
-import { BrutalButton, BrutalCard, BrutalInput, BrutalSelect, ConfirmModal, CurrencyInput, EmptyState, Loading } from '../components/ui.jsx'
+import { BrutalButton, BrutalCard, BrutalInput, BrutalSelect, ConfirmModal, CurrencyInput, BalanceAmount, EmptyState, Loading } from '../components/ui.jsx'
 
 export default function Wallets() {
   const { user } = useAuth()
@@ -57,7 +57,7 @@ export default function Wallets() {
     <div className="space-y-4">
       <BrutalCard color="bg-brutal-green" className="p-4 sm:p-5">
         <p className="font-bold text-xs sm:text-sm">TOTAL SEMUA DOMPET</p>
-        <h1 className="font-display text-3xl sm:text-4xl break-words">{formatIDR(total)}</h1>
+        <div className="mt-1"><BalanceAmount value={total} big /></div>
         <p className="text-xs sm:text-sm mt-1 font-bold">{wallets.length} dompet • saldo awal + mutasi transaksi</p>
       </BrutalCard>
 
@@ -131,7 +131,9 @@ export default function Wallets() {
                         {walletTypeLabel(w.type)}
                       </span>
                     </div>
-                    <p className="font-display text-base sm:text-lg text-right break-words">{formatIDR(balances[w.id] || 0)}</p>
+                    <div className="text-right shrink-0 max-w-[55%]">
+                      <BalanceAmount value={balances[w.id] || 0} />
+                    </div>
                   </div>
                   <p className="text-xs mt-2 font-bold text-neutral-600">
                     Saldo awal {formatIDR(w.initialBalance || 0)} • {usageCount(w.id)} transaksi
