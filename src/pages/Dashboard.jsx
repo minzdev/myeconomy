@@ -6,7 +6,7 @@ import { listTransactions, monthlySummary, addTransaction, filterTx } from '../l
 import { listCategories } from '../lib/categories.js'
 import { listWallets, calcWalletBalances, walletName } from '../lib/wallets.js'
 import { formatIDR, monthKey, compactIDR } from '../lib/currency.js'
-import { BrutalButton, BrutalCard, EmptyState, Loading } from '../components/ui.jsx'
+import { BrutalButton, BrutalCard, BrutalMonth, EmptyState, Loading } from '../components/ui.jsx'
 import { friendlyDbError } from '../lib/errors.js'
 import TransactionForm from '../components/TransactionForm.jsx'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
@@ -47,11 +47,10 @@ export default function Dashboard() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2 items-center">
-        <input
-          type="month"
+        <BrutalMonth
           value={month}
           onChange={(e) => setMonth(e.target.value)}
-          className="input-brutal bg-white w-auto font-bold min-h-[44px]"
+          className="w-full sm:w-auto"
           aria-label="Pilih bulan"
         />
         <span className="text-xs sm:text-sm font-bold">Cashflow {month}</span>

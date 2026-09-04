@@ -5,7 +5,7 @@ import { listBudgets, upsertBudget, removeBudget } from '../lib/budgets.js'
 import { listTransactions, filterTx } from '../lib/transactions.js'
 import { listCategories } from '../lib/categories.js'
 import { formatIDR, monthKey } from '../lib/currency.js'
-import { BrutalButton, BrutalCard, BrutalInput, BrutalSelect, CurrencyInput, Loading } from '../components/ui.jsx'
+import { BrutalButton, BrutalCard, BrutalInput, BrutalMonth, BrutalSelect, CurrencyInput, Loading } from '../components/ui.jsx'
 import { friendlyDbError } from '../lib/errors.js'
 
 export default function Budgets() {
@@ -31,7 +31,7 @@ export default function Budgets() {
     <div className="space-y-4">
       <BrutalCard color="bg-brutal-yellow">
         <h2 className="font-display text-2xl">BUDGET {month}</h2>
-        <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="input-brutal bg-white w-auto mt-2 font-bold" />
+        <BrutalMonth value={month} onChange={(e) => setMonth(e.target.value)} className="mt-2 sm:max-w-[240px]" aria-label="Pilih bulan" />
       </BrutalCard>
 
       <BrutalCard>

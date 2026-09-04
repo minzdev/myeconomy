@@ -32,6 +32,22 @@
   .input-brutal {
     @apply border-2 border-black rounded-lg px-3 py-2 w-full bg-white focus:outline-none focus:shadow-brutal focus:translate-x-[-1px] focus:translate-y-[-1px] transition-all;
   }
+  /* Month input: sembunyikan ikon bawaan browser, klik seluruh area buka picker */
+  .brutal-month {
+    position: relative;
+  }
+  .brutal-month::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+  }
+  .brutal-month::-webkit-inner-spin-button,
+  .brutal-month::-webkit-clear-button {
+    display: none;
+  }
 }
 
 @layer utilities {

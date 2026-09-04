@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext.jsx'
 import { listTransactions, filterTx, monthlySummary } from '../lib/transactions.js'
 import { listCategories } from '../lib/categories.js'
 import { formatIDR, monthKey, compactIDR } from '../lib/currency.js'
-import { BrutalButton, BrutalCard, Loading, EmptyState } from '../components/ui.jsx'
+import { BrutalButton, BrutalCard, BrutalMonth, Loading, EmptyState } from '../components/ui.jsx'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
 
 const COLORS = ['#FF90E8', '#90CDF4', '#FFDC58', '#23A094', '#FF6B6B', '#B388FF', '#69F0AE']
@@ -29,7 +29,7 @@ export default function Reports() {
     <div className="space-y-4">
       <BrutalCard color="bg-brutal-blue">
         <h2 className="font-display text-xl sm:text-2xl">LAPORAN {month}</h2>
-        <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="input-brutal bg-white w-full sm:w-auto mt-2 font-bold min-h-[44px]" />
+        <BrutalMonth value={month} onChange={(e) => setMonth(e.target.value)} className="mt-2 sm:max-w-[240px]" aria-label="Pilih bulan" />
         <div className="grid grid-cols-3 gap-2 mt-3 text-center">
           <div className="border-2 border-black rounded-lg bg-white px-1 py-2 min-w-0">
             <p className="text-[10px] sm:text-xs font-bold">MASUK</p>

@@ -75,6 +75,34 @@ export function EmptyState({ title = 'Belum ada data', desc = '' }) {
   )
 }
 
+// Input bulan gaya brutalist + ikon kalender custom, konsisten di semua halaman
+export function BrutalMonth({ className = '', ...props }) {
+  return (
+    <span className={`relative block min-w-0 ${className}`}>
+      <input
+        type="month"
+        {...props}
+        className="input-brutal brutal-month block w-full font-bold min-h-[44px] pr-10 cursor-pointer bg-white"
+      />
+      <svg
+        aria-hidden="true"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+      >
+        <path d="M8 2v4M16 2v4M3 8h18" />
+        <rect x="3" y="4" width="18" height="18" rx="2" />
+      </svg>
+    </span>
+  )
+}
+
 export function Loading({ text = 'Memuat...' }) {
   return (
     <div className="card-brutal p-6 bg-brutal-yellow font-bold flex items-center gap-3" role="status">

@@ -5,7 +5,7 @@ import { listTransactions, filterTx, resolveDateRange, addTransaction, updateTra
 import { listCategories } from '../lib/categories.js'
 import { listWallets, walletName } from '../lib/wallets.js'
 import { formatIDR, monthKey } from '../lib/currency.js'
-import { BrutalButton, BrutalCard, BrutalInput, BrutalSelect, ConfirmModal, EmptyState, Loading } from '../components/ui.jsx'
+import { BrutalButton, BrutalCard, BrutalInput, BrutalMonth, BrutalSelect, ConfirmModal, EmptyState, Loading } from '../components/ui.jsx'
 import { friendlyDbError } from '../lib/errors.js'
 import TransactionForm from '../components/TransactionForm.jsx'
 
@@ -136,7 +136,7 @@ export default function Transactions() {
         </div>
 
         {datePreset === 'month' && (
-          <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="input-brutal bg-white font-bold min-h-[44px] mt-2" aria-label="Pilih bulan" />
+          <BrutalMonth value={month} onChange={(e) => setMonth(e.target.value)} className="mt-2" aria-label="Pilih bulan" />
         )}
         {datePreset === 'custom' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
