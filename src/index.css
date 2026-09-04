@@ -32,17 +32,14 @@
   .input-brutal {
     @apply border-2 border-black rounded-lg px-3 py-2 w-full bg-white focus:outline-none focus:shadow-brutal focus:translate-x-[-1px] focus:translate-y-[-1px] transition-all;
   }
-  /* Month input: indikator bawaan browser disembunyikan total,
-     picker dibuka via showPicker() saat field diklik */
-  .brutal-month {
+  /* Month picker custom: wajahnya div biasa, input asli transparan penuh.
+     Fokus keyboard tetap terlihat via :focus-within */
+  .brutal-month-face {
     position: relative;
   }
-  .brutal-month::-webkit-calendar-picker-indicator {
-    display: none;
-  }
-  .brutal-month::-webkit-inner-spin-button,
-  .brutal-month::-webkit-clear-button {
-    display: none;
+  span:focus-within > .brutal-month-face {
+    box-shadow: 4px 4px 0px #000;
+    transform: translate(-1px, -1px);
   }
 }
 
