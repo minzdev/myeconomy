@@ -1,9 +1,12 @@
 // My Economy API - Node.js + Express + Firebase Admin
 // Jalan: cd server && npm install && npm run dev
-// Env: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY, PORT
+// Env: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY, PORT,
+//      TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET
 import express from 'express'
 import cors from 'cors'
 import admin from 'firebase-admin'
+import crypto from 'crypto'
+import { handleTelegramUpdate, telegramEnabled } from './telegram.js'
 
 const app = express()
 app.use(cors())
@@ -73,6 +76,39 @@ app.post('/api/transactions/validate', authUid, (req, res) => {
   const err = validateTx(req.body)
   if (err) return res.status(400).json({ error: err })
   res.json({ ok: true })
+})
+
+// ---- Bot Telegram ----
+
+// Buat kode tautan 6 karakter (berlaku 15 menit), dipakai "/start KODE" di bot
+app.post('/api/telegram/link-code', authUid, async (req, res) => {
+  if (!db) return res.status(503).json({ error: 'Backend belum terhubung Firestore' })
+  const code = crypto.randomBytes(3).toString('hex').toUpperCase()
+  await db.collection('telegram_link_codes').doc(code).set({ uid: req.uid, createdAt: new Date() })
+  res.json({ code, expiresInMinutes: 15 })
+})
+
+// Putuskan semua chat Telegram yang tertaut ke akun ini
+app.delete('/api/telegram/link', authUid, async (req, res) => {
+  if (!db) return res.status(503).json({ error: 'Backend belum terhubung Firestore' })
+  const snap = await db.collection('telegram_chats').where('uid', '==', req.uid).get()
+  await Promise.all(snap.docs.map((d) => d.ref.delete()))
+  res.json({ ok: true, removed: snap.size })
+})
+
+// Webhook Telegram: set via
+// https://api.telegram.org/botTOKEN/setWebhook?url=https://APIKAMU/api/telegram/webhook&secret_token=RAHASIA
+app.post('/api/telegram/webhook', async (req, res) => {
+  const expected = process.env.TELEGRAM_WEBHOOK_SECRET || ''
+  if (expected && req.headers['x-telegram-bot-api-secret-token'] !== expected) {
+    return res.sendStatus(401)
+  }
+  res.sendStatus(200) // ack cepat agar Telegram tidak retry
+  if (!telegramEnabled) {
+    console.warn('[telegram] TELEGRAM_BOT_TOKEN belum diisi')
+    return
+  }
+  handleTelegramUpdate(db, req.body).catch((e) => console.error('[telegram]', e.message))
 })
 
 const PORT = process.env.PORT || 5000
