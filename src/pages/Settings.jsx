@@ -38,7 +38,7 @@ export default function Settings() {
         </p>
         <ol className="text-xs sm:text-sm font-bold mt-2 space-y-1 list-decimal list-inside">
           <li>Klik <b>Buat kode</b> (berlaku 15 menit)</li>
-          <li>Buka bot{TG_BOT ? <> <a className="underline underline-offset-2" href={`https://t.me/${TG_BOT}`} target="_blank" rel="noreferrer">@{TG_BOT}</a></> : ' Telegram kamu'} lalu kirim <code>/start KODE</code></li>
+          <li>Buka bot{TG_BOT ? <> <a className="underline underline-offset-2" href={`https://t.me/${TG_BOT}`} target="_blank" rel="noreferrer">@{TG_BOT}</a></> : ' Telegram kamu'} lalu kirim <code>/start KODE</code> (atau tempel kodenya saja)</li>
           <li>Kirim transaksi bebas, batalkan dengan <code>/batal</code></li>
         </ol>
         {linkCode && (

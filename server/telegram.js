@@ -72,6 +72,28 @@ async function getUserData(db, uid) {
   }
 }
 
+async function tryLinkWithCode(db, chatId, chatKey, rawCode) {
+  const code = String(rawCode || '').trim().toUpperCase()
+  if (!/^[0-9A-F]{6}$/.test(code)) return false
+  const codeRef = db.collection('telegram_link_codes').doc(code)
+  const codeDoc = await codeRef.get()
+  if (!codeDoc.exists) {
+    await tgSend(chatId, 'Kode tidak dikenal / kadaluarsa. Buat kode baru di web (<b>Pengaturan → Bot Telegram</b>).')
+    return true
+  }
+  const { uid, createdAt } = codeDoc.data()
+  const ageMin = (Date.now() - (createdAt?.toMillis?.() || createdAt?.getTime?.() || 0)) / 60000
+  if (ageMin > 15) {
+    await codeRef.delete().catch(() => {})
+    await tgSend(chatId, 'Kode kadaluarsa (15 menit). Buat kode baru di web.')
+    return true
+  }
+  await db.collection('telegram_chats').doc(chatKey).set({ uid, linkedAt: new Date(), chatId: chatKey })
+  await codeRef.delete().catch(() => {})
+  await tgSend(chatId, LINKED)
+  return true
+}
+
 export async function handleTelegramUpdate(db, update) {
   const msg = update?.message
   const text = (msg?.text || '').trim()
@@ -85,35 +107,25 @@ export async function handleTelegramUpdate(db, update) {
     return
   }
 
-  // Perintah tanpa perlu tautan
+  // Tautan akun: "/start KODE" maupun KODE saja
   if (text.startsWith('/start')) {
-    const code = text.split(/\s+/)[1]?.trim().toUpperCase()
+    const code = text.split(/\s+/)[1]?.trim()
     if (!code) {
-      await tgSend(chatId, `${WELCOME}\n\n🔗 <b>Tautkan dulu akunmu:</b>\n1. Buka web → <b>Pengaturan → Bot Telegram → Buat kode</b>\n2. Kirim ke sini: <code>/start KODEKAMU</code>`)
+      await tgSend(chatId, `${WELCOME}\n\n🔗 <b>Tautkan dulu akunmu:</b>\n1. Buka web → <b>Pengaturan → Bot Telegram → Buat kode</b>\n2. Kirim ke sini: <code>/start KODEKAMU</code> atau langsung tempel kodenya`)
       return
     }
-    const codeRef = db.collection('telegram_link_codes').doc(code)
-    const codeDoc = await codeRef.get()
-    if (!codeDoc.exists) {
-      await tgSend(chatId, 'Kode tidak dikenal / kadaluarsa. Buat kode baru di web.')
-      return
-    }
-    const { uid, createdAt } = codeDoc.data()
-    const ageMin = (Date.now() - (createdAt?.toMillis?.() || 0)) / 60000
-    if (ageMin > 15) {
-      await codeRef.delete().catch(() => {})
-      await tgSend(chatId, 'Kode kadaluarsa (15 menit). Buat kode baru di web.')
-      return
-    }
-    await db.collection('telegram_chats').doc(chatKey).set({ uid, linkedAt: new Date(), chatId: chatKey })
-    await codeRef.delete().catch(() => {})
-    await tgSend(chatId, LINKED)
+    await tryLinkWithCode(db, chatId, chatKey, code)
     return
   }
 
   const chatDoc = await db.collection('telegram_chats').doc(chatKey).get()
   if (!chatDoc.exists) {
-    await tgSend(chatId, 'Akun belum tertaut. Buat kode di web (<b>Pengaturan → Bot Telegram</b>) lalu kirim <code>/start KODE</code>.')
+    // Izinkan tempel kode langsung tanpa /start
+    if (/^[0-9A-Fa-f]{6}$/.test(text.trim())) {
+      await tryLinkWithCode(db, chatId, chatKey, text)
+      return
+    }
+    await tgSend(chatId, 'Akun belum tertaut. Buat kode di web (<b>Pengaturan → Bot Telegram</b>) lalu kirim <code>/start KODE</code> atau langsung tempel kodenya.')
     return
   }
   const { uid } = chatDoc.data()
