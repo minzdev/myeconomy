@@ -1,6 +1,7 @@
 // Netlify Function: Bot Telegram My Economy (gratis, tanpa sleep).
-// Satu function melayani 3 route (lihat netlify.toml rewrite /api/telegram/*):
+// Satu function melayani 4 route (lihat netlify.toml rewrite /api/telegram/*):
 //   POST   /api/telegram/webhook   <- webhook Telegram (verifikasi secret_token)
+//   GET    /api/telegram/status    <- status tautan (butuh Firebase ID token)
 //   POST   /api/telegram/link-code <- buat kode tautan (butuh Firebase ID token)
 //   DELETE /api/telegram/link      <- putuskan tautan (butuh Firebase ID token)
 // Env (Site settings > Environment variables):
@@ -77,6 +78,17 @@ export async function handler(event) {
   // 2 & 3. Butuh login Firebase
   const uid = await uidFromAuth(event.headers)
   if (!uid) return json(401, { error: 'Unauthorized' })
+
+  if (path.endsWith('/status') && method === 'GET') {
+    const snap = await database.collection('telegram_chats').where('uid', '==', uid).get()
+    const first = snap.docs[0]?.data()
+    const linkedAt = first?.linkedAt
+    return json(200, {
+      linked: snap.size > 0,
+      count: snap.size,
+      linkedAt: linkedAt?.toDate ? linkedAt.toDate().toISOString() : null,
+    })
+  }
 
   if (path.endsWith('/link-code') && method === 'POST') {
     const code = crypto.randomBytes(3).toString('hex').toUpperCase()

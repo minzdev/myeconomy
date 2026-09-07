@@ -80,6 +80,19 @@ app.post('/api/transactions/validate', authUid, (req, res) => {
 
 // ---- Bot Telegram ----
 
+// Status tautan Telegram akun ini
+app.get('/api/telegram/status', authUid, async (req, res) => {
+  if (!db) return res.status(503).json({ error: 'Backend belum terhubung Firestore' })
+  const snap = await db.collection('telegram_chats').where('uid', '==', req.uid).get()
+  const first = snap.docs[0]?.data()
+  const linkedAt = first?.linkedAt
+  res.json({
+    linked: snap.size > 0,
+    count: snap.size,
+    linkedAt: linkedAt?.toDate ? linkedAt.toDate().toISOString() : null,
+  })
+})
+
 // Buat kode tautan 6 karakter (berlaku 15 menit), dipakai "/start KODE" di bot
 app.post('/api/telegram/link-code', authUid, async (req, res) => {
   if (!db) return res.status(503).json({ error: 'Backend belum terhubung Firestore' })

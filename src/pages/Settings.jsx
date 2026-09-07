@@ -21,6 +21,19 @@ export default function Settings() {
   const [tgBusy, setTgBusy] = useState(false)
   const [err, setErr] = useState('')
   const { data: cats = [], isLoading } = useQuery(['cats', uid], () => listCategories(uid))
+  const { data: tgStatus, refetch: refetchTgStatus } = useQuery(
+    ['tg-status', uid],
+    async () => {
+      if (!user?.getIdToken) throw new Error('demo')
+      const token = await user.getIdToken()
+      const r = await fetch('/api/telegram/status', { headers: { Authorization: `Bearer ${token}` } })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) throw new Error(j.error || 'backend')
+      return j
+    },
+    { retry: false, refetchOnWindowFocus: false },
+  )
+  const tgLinked = !!tgStatus?.linked
 
   if (isLoading) return <Loading />
 
@@ -31,56 +44,21 @@ export default function Settings() {
         <p className="text-sm font-bold mt-1 break-all">{user?.email} {user?.uid === 'demo' && '(Mode Demo - isi Firebase env untuk real)'}</p>
       </BrutalCard>
 
-      <BrutalCard color="bg-brutal-blue">
-        <h2 className="font-display text-xl">BOT TELEGRAM</h2>
-        <p className="text-xs sm:text-sm font-bold mt-1">
-          Catat transaksi lewat chat. Contoh: <code>keluar 50rb makan bca</code>
-        </p>
-        <ol className="text-xs sm:text-sm font-bold mt-2 space-y-1 list-decimal list-inside">
-          <li>Klik <b>Buat kode</b> (berlaku 15 menit)</li>
-          <li>Buka bot{TG_BOT ? <> <a className="underline underline-offset-2" href={`https://t.me/${TG_BOT}`} target="_blank" rel="noreferrer">@{TG_BOT}</a></> : ' Telegram kamu'} lalu kirim <code>/start KODE</code> (atau tempel kodenya saja)</li>
-          <li>Kirim transaksi bebas, batalkan dengan <code>/batal</code></li>
-        </ol>
-        {linkCode && (
-          <p className="mt-2 text-center font-display text-3xl tracking-widest border-2 border-black rounded-lg bg-white py-2">
-            {linkCode}
+      {tgLinked ? (
+        <BrutalCard color="bg-brutal-green">
+          <h2 className="font-display text-xl">✓ BOT TERHUBUNG</h2>
+          <p className="text-xs sm:text-sm font-bold mt-1">
+            Telegram tertaut ({tgStatus.count} chat)
+            {tgStatus.linkedAt ? ` sejak ${new Date(tgStatus.linkedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}.
+            Kirim transaksi kapan saja, contoh: <code>keluar 50rb makan bca</code>
           </p>
-        )}
-        {tgErr && <p role="alert" className="text-sm font-bold bg-red-300 border-2 border-black rounded-lg p-2 mt-2">{tgErr}</p>}
-        <div className="flex flex-col sm:flex-row gap-2 mt-3">
+          {tgErr && <p role="alert" className="text-sm font-bold bg-red-300 border-2 border-black rounded-lg p-2 mt-2">{tgErr}</p>}
           <BrutalButton
-            color="bg-black text-white flex-1"
-            className="min-h-[44px] text-sm"
-            disabled={tgBusy}
-            onClick={async () => {
-              setTgErr('')
-              setTgBusy(true)
-              try {
-                if (!user?.getIdToken) throw new Error('Butuh backend + login Firebase (bukan mode demo).')
-                const token = await user.getIdToken()
-                const r = await fetch('/api/telegram/link-code', {
-                  method: 'POST',
-                  headers: { Authorization: `Bearer ${token}` },
-                })
-                const j = await r.json().catch(() => ({}))
-                if (!r.ok) throw new Error(j.error || 'Backend tidak merespons. Pastikan server jalan.')
-                setLinkCode(j.code)
-              } catch (e2) {
-                setTgErr(e2.message)
-              } finally {
-                setTgBusy(false)
-              }
-            }}
-          >
-            {tgBusy ? 'Membuat...' : 'Buat kode'}
-          </BrutalButton>
-          <BrutalButton
-            color="bg-white flex-1"
+            color="bg-white w-full sm:w-auto mt-3"
             className="min-h-[44px] text-sm"
             onClick={async () => {
               setTgErr('')
               try {
-                if (!user?.getIdToken) throw new Error('Butuh backend + login Firebase (bukan mode demo).')
                 const token = await user.getIdToken()
                 const r = await fetch('/api/telegram/link', {
                   method: 'DELETE',
@@ -89,6 +67,7 @@ export default function Settings() {
                 const j = await r.json().catch(() => ({}))
                 if (!r.ok) throw new Error(j.error || 'Backend tidak merespons.')
                 setLinkCode('')
+                refetchTgStatus()
               } catch (e2) {
                 setTgErr(e2.message)
               }
@@ -96,8 +75,64 @@ export default function Settings() {
           >
             Putuskan tautan
           </BrutalButton>
-        </div>
-      </BrutalCard>
+        </BrutalCard>
+      ) : (
+        <BrutalCard color="bg-brutal-blue">
+          <h2 className="font-display text-xl">BOT TELEGRAM</h2>
+          <p className="inline-block text-[11px] font-bold border-2 border-black rounded-full px-2 py-0.5 mt-2 bg-white">
+            ○ Belum tertaut
+          </p>
+          <p className="text-xs sm:text-sm font-bold mt-2">
+            Catat transaksi lewat chat. Contoh: <code>keluar 50rb makan bca</code>
+          </p>
+          <ol className="text-xs sm:text-sm font-bold mt-2 space-y-1 list-decimal list-inside">
+            <li>Klik <b>Buat kode</b> (berlaku 15 menit)</li>
+            <li>Buka bot{TG_BOT ? <> <a className="underline underline-offset-2" href={`https://t.me/${TG_BOT}`} target="_blank" rel="noreferrer">@{TG_BOT}</a></> : ' Telegram kamu'} lalu kirim <code>/start KODE</code> (atau tempel kodenya saja)</li>
+            <li>Kirim transaksi bebas, batalkan dengan <code>/batal</code></li>
+          </ol>
+          {linkCode && (
+            <p className="mt-2 text-center font-display text-3xl tracking-widest border-2 border-black rounded-lg bg-white py-2">
+              {linkCode}
+            </p>
+          )}
+          {tgErr && <p role="alert" className="text-sm font-bold bg-red-300 border-2 border-black rounded-lg p-2 mt-2">{tgErr}</p>}
+          <div className="flex flex-col sm:flex-row gap-2 mt-3">
+            <BrutalButton
+              color="bg-black text-white flex-1"
+              className="min-h-[44px] text-sm"
+              disabled={tgBusy}
+              onClick={async () => {
+                setTgErr('')
+                setTgBusy(true)
+                try {
+                  if (!user?.getIdToken) throw new Error('Butuh backend + login Firebase (bukan mode demo).')
+                  const token = await user.getIdToken()
+                  const r = await fetch('/api/telegram/link-code', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                  })
+                  const j = await r.json().catch(() => ({}))
+                  if (!r.ok) throw new Error(j.error || 'Backend tidak merespons. Pastikan server jalan.')
+                  setLinkCode(j.code)
+                } catch (e2) {
+                  setTgErr(e2.message)
+                } finally {
+                  setTgBusy(false)
+                }
+              }}
+            >
+              {tgBusy ? 'Membuat...' : 'Buat kode'}
+            </BrutalButton>
+            <BrutalButton
+              color="bg-white flex-1"
+              className="min-h-[44px] text-sm"
+              onClick={() => refetchTgStatus()}
+            >
+              Sudah kirim /start? Cek
+            </BrutalButton>
+          </div>
+        </BrutalCard>
+      )}
 
       <BrutalCard color="bg-brutal-yellow">
         <h2 className="font-display text-xl">TAMBAH KATEGORI</h2>
