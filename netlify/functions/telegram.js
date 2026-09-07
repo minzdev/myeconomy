@@ -47,9 +47,12 @@ export async function handler(event) {
   // 1. Webhook Telegram
   if (path.endsWith('/webhook') && method === 'POST') {
     const expected = process.env.TELEGRAM_WEBHOOK_SECRET || ''
-    if (expected && event.headers['x-telegram-bot-api-secret-token'] !== expected) {
+    const got = event.headers['x-telegram-bot-api-secret-token']
+    if (expected && got !== expected) {
+      console.warn('[telegram] secret webhook tidak cocok')
       return { statusCode: 401, body: 'unauthorized' }
     }
+    if (!expected) console.warn('[telegram] TELEGRAM_WEBHOOK_SECRET kosong, verifikasi dilewati')
     if (!telegramEnabled) {
       console.warn('[telegram] TELEGRAM_BOT_TOKEN belum diisi')
       return { statusCode: 200, body: 'ok' }

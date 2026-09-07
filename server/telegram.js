@@ -7,17 +7,43 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 export const telegramEnabled = !!BOT_TOKEN
 
 export async function tgSend(chatId, text) {
-  if (!BOT_TOKEN) return
+  if (!BOT_TOKEN) {
+    console.error('[telegram] TELEGRAM_BOT_TOKEN kosong, pesan tidak terkirim')
+    return
+  }
   try {
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    const r = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
     })
+    if (!r.ok) console.error('[telegram] send gagal:', r.status, await r.text().catch(() => ''))
   } catch (e) {
     console.error('[telegram] send gagal:', e.message)
   }
 }
+
+const WELCOME = [
+  '👋 <b>Selamat datang di My Economy!</b>',
+  '',
+  'Aku bot pencatat keuanganmu. Cukup kirim pesan seperti ini:',
+  '<code>keluar 50rb makan bca</code>',
+  '<code>makan siang 45.000 gopay</code>',
+  '<code>masuk 5jt gaji bca</code>',
+  '',
+  'Perintah: /bantuan /batal',
+].join('\n')
+
+const LINKED = [
+  '✅ <b>Akun tertaut! Selamat datang di My Economy!</b>',
+  '',
+  'Kirim transaksi seperti ini:',
+  '<code>keluar 50rb makan bca</code>',
+  '<code>makan siang 45.000 gopay</code>',
+  '<code>masuk 5jt gaji bca</code>',
+  '',
+  'Perintah: /bantuan /batal',
+].join('\n')
 
 const HELP = [
   '<b>My Economy Bot</b>',
@@ -51,6 +77,7 @@ export async function handleTelegramUpdate(db, update) {
   const chatId = msg?.chat?.id
   if (!chatId || !text) return
   const chatKey = String(chatId)
+  console.log('[telegram] pesan masuk chat', chatKey, ':', text.slice(0, 60))
 
   if (!db) {
     await tgSend(chatId, 'Backend belum terhubung ke Firestore. Cek env server.')
@@ -61,7 +88,7 @@ export async function handleTelegramUpdate(db, update) {
   if (text.startsWith('/start')) {
     const code = text.split(/\s+/)[1]?.trim().toUpperCase()
     if (!code) {
-      await tgSend(chatId, 'Buat kode dulu di web: <b>Pengaturan → Bot Telegram → Buat kode</b>, lalu kirim:\n<code>/start KODEKAMU</code>')
+      await tgSend(chatId, `${WELCOME}\n\n🔗 <b>Tautkan dulu akunmu:</b>\n1. Buka web → <b>Pengaturan → Bot Telegram → Buat kode</b>\n2. Kirim ke sini: <code>/start KODEKAMU</code>`)
       return
     }
     const codeRef = db.collection('telegram_link_codes').doc(code)
@@ -79,7 +106,7 @@ export async function handleTelegramUpdate(db, update) {
     }
     await db.collection('telegram_chats').doc(chatKey).set({ uid, linkedAt: new Date(), chatId: chatKey })
     await codeRef.delete().catch(() => {})
-    await tgSend(chatId, '✅ Akun tertaut! Kirim transaksi, contoh:\n<code>keluar 50rb makan bca</code>\n\nKetik /bantuan untuk format lengkap.')
+    await tgSend(chatId, LINKED)
     return
   }
 
