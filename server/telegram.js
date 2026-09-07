@@ -1,7 +1,92 @@
 // Bot Telegram My Economy: terima pesan -> parse -> catat ke Firestore.
 // Alur tautan: user buat kode di web (POST /api/telegram/link-code),
 // lalu kirim "/start KODE" ke bot. Mapping chat tersimpan di telegram_chats/{chatId}.
-import { parseTransaction } from './parse.js'
+import { parseTransaction, parseAmountToken } from './parse.js'
+
+// ---- Rekap via chat (zona Asia/Jakarta) ----
+const ID_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+
+function jktToday() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+}
+
+function addDaysStr(s, n) {
+  const [y, m, d] = s.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d) + n * 864e5).toISOString().slice(0, 10)
+}
+
+function fmtDay(s) {
+  const [y, m, d] = s.split('-').map(Number)
+  return `${d} ${ID_MON[m - 1]} ${y}`
+}
+
+function txDayJakarta(iso) {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso))
+  } catch {
+    return String(iso).slice(0, 10)
+  }
+}
+
+// "pengeluaran hari ini" / "laporan minggu ini" / "pemasukan bulan ini" / "rekap kemarin"
+export function resolveReportRange(text) {
+  const t = ` ${String(text || '').toLowerCase()} `
+  const today = jktToday()
+  if (/kemarin/.test(t)) return { key: 'kemarin', start: addDaysStr(today, -1), end: addDaysStr(today, -1) }
+  if (/minggu/.test(t)) {
+    const [y, m, d] = today.split('-').map(Number)
+    const dow = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7 // Senin = 0
+    return { key: 'minggu', start: addDaysStr(today, -dow), end: today }
+  }
+  if (/bulan/.test(t)) return { key: 'bulan', start: `${today.slice(0, 7)}-01`, end: today }
+  if (/hari ini|hariini|hari-ini/.test(t)) return { key: 'hari', start: today, end: today }
+  // kata laporan tanpa rentang eksplisit -> default bulan ini
+  if (/(laporan|rekap|ringkasan)/.test(t)) return { key: 'bulan', start: `${today.slice(0, 7)}-01`, end: today }
+  return null
+}
+
+export function isReportQuery(text) {
+  const t = ` ${String(text || '').toLowerCase()} `
+  const hasRange = /(hari ini|hariini|kemarin|minggu|bulan|laporan|rekap|ringkasan)/.test(t)
+  if (!hasRange) return false
+  if (/(laporan|rekap|ringkasan)/.test(t)) return true
+  return /(pengeluaran|pemasukan)/.test(t)
+}
+
+function hasAmount(text) {
+  return String(text || '').split(/\s+/).some((tok) => parseAmountToken(tok) > 0)
+}
+
+export function buildReportMessage({ scope, range, list, catName }) {
+  const inScope = scope === 'both' ? list : list.filter((t) => t.type === (scope === 'income' ? 'income' : 'expense'))
+  const income = inScope.filter((t) => t.type === 'income').reduce((a, t) => a + Number(t.amount || 0), 0)
+  const expense = inScope.filter((t) => t.type !== 'income').reduce((a, t) => a + Number(t.amount || 0), 0)
+  const byCat = {}
+  for (const t of inScope) {
+    const k = t.categoryId || '?'
+    if (!byCat[k]) byCat[k] = { total: 0, type: t.type }
+    byCat[k].total += Number(t.amount || 0)
+  }
+  const top = Object.entries(byCat).sort((a, b) => b[1].total - a[1].total).slice(0, 10)
+
+  const rangeLabel = range.start === range.end ? fmtDay(range.start) : `${fmtDay(range.start)} – ${fmtDay(range.end)}`
+  const scopeTitle = scope === 'income' ? 'Pemasukan' : scope === 'expense' ? 'Pengeluaran' : 'Laporan'
+  const lines = [`📊 <b>${scopeTitle} ${range.key === 'hari' ? 'hari ini' : range.key === 'kemarin' ? 'kemarin' : range.key === 'minggu' ? 'minggu ini' : 'bulan ini'}</b> (${rangeLabel})`]
+  if (scope === 'both') {
+    lines.push(`Masuk: <b>${idr(income)}</b>`, `Keluar: <b>${idr(expense)}</b>`, `Sisa: <b>${idr(income - expense)}</b>`)
+  } else {
+    lines.push(`Total: <b>${idr(scope === 'income' ? income : expense)}</b> (${inScope.length} transaksi)`)
+  }
+  if (top.length) {
+    lines.push('', '<b>Top kategori:</b>')
+    top.forEach(([id, v], i) => {
+      lines.push(`${i + 1}. ${v.type === 'income' ? '🟢' : '🔴'} ${catName(id)} — ${idr(v.total)}`)
+    })
+  } else {
+    lines.push('', 'Belum ada transaksi pada rentang ini.')
+  }
+  return lines.join('\n')
+}
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 export const telegramEnabled = !!BOT_TOKEN
@@ -32,6 +117,8 @@ const WELCOME = [
   '<code>makan siang 45.000 gopay</code>',
   '<code>masuk 5jt gaji bca</code>',
   '',
+  '📊 Tanya rekap: <code>pengeluaran hari ini</code>, <code>laporan minggu ini</code>',
+  '',
   'Perintah: /bantuan /batal',
 ].join('\n')
 
@@ -43,16 +130,17 @@ const LINKED = [
   '<code>makan siang 45.000 gopay</code>',
   '<code>masuk 5jt gaji bca</code>',
   '',
+  '📊 Tanya rekap: <code>pengeluaran hari ini</code>, <code>laporan minggu ini</code>',
+  '',
   'Perintah: /bantuan /batal',
 ].join('\n')
 
 const HELP = [
   '<b>My Economy Bot</b>',
   '',
-  'Kirim transaksi bebas, contoh:',
-  '<code>keluar 50rb makan bca</code>',
-  '<code>makan siang 45.000 gopay</code>',
-  '<code>masuk 5jt gaji bca</code>',
+  '📝 <b>Catat:</b> <code>keluar 50rb makan bca</code>',
+  '',
+  '📊 <b>Tanya rekap:</b> <code>pengeluaran hari ini</code>, <code>pemasukan minggu ini</code>, <code>laporan bulan ini</code>',
   '',
   'Perintah: /bantuan /batal (batalkan catat terakhir)',
 ].join('\n')
@@ -157,7 +245,7 @@ export async function handleTelegramUpdate(db, update) {
     return
   }
 
-  // Pesan transaksi
+  // Pesan transaksi / tanya rekap
   let userData
   try {
     userData = await getUserData(db, uid)
@@ -165,6 +253,29 @@ export async function handleTelegramUpdate(db, update) {
     await tgSend(chatId, 'Gagal membaca data (izin database?). Pastikan firestore.rules sudah publish.')
     return
   }
+
+  // Ada nominal = niat mencatat. Tanpa nominal + kata rentang = niat tanya rekap.
+  const range = resolveReportRange(text)
+  if (range && !hasAmount(text) && isReportQuery(text)) {
+    let all = []
+    try {
+      const snap = await db.collection('users').doc(uid).collection('transactions').get()
+      all = snap.docs.map((doc) => doc.data())
+    } catch {
+      await tgSend(chatId, 'Gagal membaca data (izin database?). Pastikan firestore.rules sudah publish.')
+      return
+    }
+    const list = all.filter((t) => {
+      const day = txDayJakarta(t.date)
+      return day >= range.start && day <= range.end
+    })
+    const tl = ` ${text.toLowerCase()} `
+    const scope = /pemasukan/.test(tl) && !/pengeluaran/.test(tl) ? 'income' : /pengeluaran/.test(tl) && !/pemasukan/.test(tl) ? 'expense' : 'both'
+    const catName = (id) => userData.categories.find((c) => c.id === id)?.name || id
+    await tgSend(chatId, buildReportMessage({ scope, range, list, catName }))
+    return
+  }
+
   const parsed = parseTransaction(text, userData)
   if (!parsed.ok) {
     await tgSend(chatId, `❌ ${parsed.error}`)
