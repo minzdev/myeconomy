@@ -61,13 +61,19 @@ cp .env.example .env
 npm run dev        # frontend http://localhost:5173
 ```
 
-Backend opsional (frontend full-fungsi tanpa backend):
-```bash
-cd server
-npm install
-cp .env.example .env   # isi kredensial Firebase Admin
-npm run dev            # http://localhost:5000
-```
+## Bot Telegram (catat via chat)
+
+Backend tambahan **tidak wajib** — webhook bot jalan sebagai **Netlify Function** (`netlify/functions/telegram.js`, gratis tanpa sleep).
+
+1. Buat bot via `@BotFather` → dapat token
+2. Netlify → Environment variables, tambah:
+   `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` (dari Firebase Console → Project settings → Service accounts),
+   `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` (isi acak), `VITE_TELEGRAM_BOT` (username bot tanpa @)
+3. Deploy, lalu daftarkan webhook sekali via browser:
+   `https://api.telegram.org/botTOKEN/setWebhook?url=https://SITEMU/api/telegram/webhook&secret_token=RAHASIA`
+4. Di web: **Pengaturan → Bot Telegram → Buat kode** → kirim `/start KODE` ke bot → chat `keluar 50rb makan bca`
+
+Folder `server/` tetap ada untuk jalan lokal (`cd server && npm install && npm run dev`, proxy `/api` sudah diatur di `vite.config.js`).
 
 ## Environment Variables
 | Variabel | Keterangan |
