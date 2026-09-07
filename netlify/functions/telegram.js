@@ -63,9 +63,11 @@ export async function handler(event) {
     } catch {
       return { statusCode: 200, body: 'ok' }
     }
-    // Balas cepat agar Telegram tidak retry, proses async
+    // Tunggu sampai selesai (jangan fire-and-forget):
+    // runtime serverless mematikan proses begitu response dikirim.
+    // Masih aman dari retry Telegram karena prosesnya < 2 detik.
     const database = getDb()
-    handleTelegramUpdate(database, update).catch((e) => console.error('[telegram]', e.message))
+    await handleTelegramUpdate(database, update).catch((e) => console.error('[telegram]', e.message))
     return { statusCode: 200, body: 'ok' }
   }
 

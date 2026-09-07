@@ -18,6 +18,7 @@ export async function tgSend(chatId, text) {
       body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
     })
     if (!r.ok) console.error('[telegram] send gagal:', r.status, await r.text().catch(() => ''))
+    else console.log('[telegram] balasan terkirim ke chat', chatId)
   } catch (e) {
     console.error('[telegram] send gagal:', e.message)
   }
