@@ -9,6 +9,12 @@
   to = "/.netlify/functions/telegram"
   status = 200
 
+# Reset password email HTML (Netlify Function, tanpa backend terpisah)
+[[redirects]]
+  from = "/api/auth/reset-email"
+  to = "/.netlify/functions/reset-email"
+  status = 200
+
 # Fallback lama ke backend terpisah (opsional, aktifkan bila perlu)
 # [[redirects]]
 #   from = "/api/*"
