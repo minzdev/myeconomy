@@ -4,7 +4,7 @@
 //   FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY,
 //   RESEND_API_KEY, MAIL_FROM, APP_NAME (opsional), PASSWORD_RESET_CONTINUE_URL (opsional)
 import admin from 'firebase-admin'
-import { passwordResetEmail, passwordResetText } from '../../server/emailTemplate.js'
+import { passwordResetEmail, passwordResetText, toCustomResetUrl } from '../../server/emailTemplate.js'
 
 function getAuth() {
   const { FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY } = process.env
@@ -58,7 +58,9 @@ export async function handler(event) {
     const appName = process.env.APP_NAME || 'My Economy'
     const continueUrl = process.env.PASSWORD_RESET_CONTINUE_URL || ''
     const actionSettings = continueUrl ? { url: continueUrl, handleCodeInApp: false } : undefined
-    const resetUrl = await auth.generatePasswordResetLink(email, actionSettings)
+    const resetLink = await auth.generatePasswordResetLink(email, actionSettings)
+    // Arahkan ke halaman reset custom (cantik) bila dikonfigurasi, fallback ke link Firebase
+    const resetUrl = toCustomResetUrl(resetLink, process.env.PASSWORD_RESET_HANDLER_URL || '')
 
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',

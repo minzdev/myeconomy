@@ -7,7 +7,7 @@ import cors from 'cors'
 import admin from 'firebase-admin'
 import crypto from 'crypto'
 import { handleTelegramUpdate, telegramEnabled } from './telegram.js'
-import { passwordResetEmail, passwordResetText } from './emailTemplate.js'
+import { passwordResetEmail, passwordResetText, toCustomResetUrl } from './emailTemplate.js'
 
 const app = express()
 app.use(cors())
@@ -111,7 +111,9 @@ app.post('/api/auth/reset-email', async (req, res) => {
     const appName = process.env.APP_NAME || 'My Economy'
     const continueUrl = process.env.PASSWORD_RESET_CONTINUE_URL || ''
     const actionSettings = continueUrl ? { url: continueUrl, handleCodeInApp: false } : undefined
-    const resetUrl = await admin.auth().generatePasswordResetLink(email, actionSettings)
+    const resetLink = await admin.auth().generatePasswordResetLink(email, actionSettings)
+    // Arahkan ke halaman reset custom (cantik) bila dikonfigurasi, fallback ke link Firebase
+    const resetUrl = toCustomResetUrl(resetLink, process.env.PASSWORD_RESET_HANDLER_URL || '')
 
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',

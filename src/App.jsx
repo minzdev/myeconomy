@@ -9,12 +9,14 @@ import Reports from './pages/Reports.jsx'
 import Settings from './pages/Settings.jsx'
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
+import ResetPassword from './pages/ResetPassword.jsx'
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route
         path="/*"
         element={

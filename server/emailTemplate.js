@@ -126,3 +126,20 @@ export function passwordResetText({ email, resetUrl, appName = BRAND.name }) {
     `Tim ${appName}`,
   ].join('\n')
 }
+
+// Tulis ulang link reset bawaan Firebase (…/__/auth/action?mode=resetPassword&oobCode=…)
+// menjadi halaman custom milik kita (mis. https://appkamu.com/reset-password).
+// Hanya oobCode yang dibawa (cukup untuk verifyPasswordResetCode/confirmPasswordReset).
+// Kalau handlerBase kosong / bukan link reset / tanpa oobCode -> kembalikan URL asli.
+export function toCustomResetUrl(resetUrl, handlerBase) {
+  if (!handlerBase) return resetUrl
+  try {
+    const u = new URL(resetUrl)
+    if (u.searchParams.get('mode') !== 'resetPassword') return resetUrl
+    const oobCode = u.searchParams.get('oobCode')
+    if (!oobCode) return resetUrl
+    return `${String(handlerBase).replace(/\/$/, '')}?mode=resetPassword&oobCode=${encodeURIComponent(oobCode)}`
+  } catch {
+    return resetUrl
+  }
+}
