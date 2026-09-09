@@ -70,8 +70,26 @@ export function AuthProvider({ children }) {
     return cred
   }
 
-  const reset = (email) => {
+  const reset = async (email) => {
     if (isDemo) return Promise.resolve()
+    // Coba backend dulu (email HTML profesional via Resend).
+    // Fallback ke Firebase client bila backend belum dikonfigurasi.
+    try {
+      const r = await fetch('/api/auth/reset-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      if (r.ok) return
+      // 503 = email service belum setup -> fallback; error lain lempar ke UI
+      if (r.status !== 503) {
+        const data = await r.json().catch(() => ({}))
+        throw new Error(data.error || 'Gagal mengirim email reset')
+      }
+    } catch (e) {
+      if (e.message && e.message !== 'Failed to fetch') throw e
+      // network error (backend tidak jalan, mis. dev lokal) -> fallback
+    }
     return sendPasswordResetEmail(auth, email)
   }
 

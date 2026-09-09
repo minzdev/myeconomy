@@ -7,6 +7,7 @@ import cors from 'cors'
 import admin from 'firebase-admin'
 import crypto from 'crypto'
 import { handleTelegramUpdate, telegramEnabled } from './telegram.js'
+import { passwordResetEmail, passwordResetText } from './emailTemplate.js'
 
 const app = express()
 app.use(cors())
@@ -76,6 +77,64 @@ app.post('/api/transactions/validate', authUid, (req, res) => {
   const err = validateTx(req.body)
   if (err) return res.status(400).json({ error: err })
   res.json({ ok: true })
+})
+
+// ---- Auth: reset password via email HTML (Resend) ----
+
+// POST /api/auth/reset-email  body: { email }
+// Generate link via Firebase Admin, kirim via Resend dengan template HTML profesional.
+// Tanpa auth (dipakai dari halaman login). Ada rate-limit sederhana per IP.
+const resetAttempts = new Map()
+app.post('/api/auth/reset-email', async (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase()
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'Email tidak valid' })
+  }
+  if (!db) return res.status(503).json({ error: 'Backend belum terhubung Firestore' })
+  const apiKey = process.env.RESEND_API_KEY || ''
+  const from = process.env.MAIL_FROM || ''
+  if (!apiKey || !from) {
+    return res.status(503).json({ error: 'Email service belum dikonfigurasi (RESEND_API_KEY / MAIL_FROM)' })
+  }
+
+  // Rate-limit: maks 3x per 10 menit per IP+email
+  const key = `${req.ip}:${email}`
+  const now = Date.now()
+  const hist = (resetAttempts.get(key) || []).filter((t) => now - t < 10 * 60 * 1000)
+  if (hist.length >= 3) {
+    return res.status(429).json({ error: 'Terlalu sering. Coba lagi 10 menit.' })
+  }
+  hist.push(now)
+  resetAttempts.set(key, hist)
+
+  try {
+    const appName = process.env.APP_NAME || 'My Economy'
+    const continueUrl = process.env.PASSWORD_RESET_CONTINUE_URL || ''
+    const actionSettings = continueUrl ? { url: continueUrl, handleCodeInApp: false } : undefined
+    const resetUrl = await admin.auth().generatePasswordResetLink(email, actionSettings)
+
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from,
+        to: [email],
+        subject: `Reset password ${appName} kamu 🔑`,
+        html: passwordResetEmail({ email, resetUrl, appName }),
+        text: passwordResetText({ email, resetUrl, appName }),
+      }),
+    })
+    if (!r.ok) {
+      const detail = await r.text().catch(() => '')
+      console.error('[reset-email] resend gagal:', r.status, detail.slice(0, 300))
+      return res.status(502).json({ error: 'Gagal mengirim email, coba lagi.' })
+    }
+    res.json({ ok: true })
+  } catch (e) {
+    // Jangan bocorkan apakah email terdaftar atau tidak (anti user-enumeration)
+    console.error('[reset-email]', e.message)
+    res.json({ ok: true })
+  }
 })
 
 // ---- Bot Telegram ----
