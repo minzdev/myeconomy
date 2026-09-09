@@ -80,7 +80,7 @@ export function buildReportMessage({ scope, range, list, catName }) {
   if (top.length) {
     lines.push('', '<b>Top kategori:</b>')
     top.forEach(([id, v], i) => {
-      lines.push(`${i + 1}. ${v.type === 'income' ? '🟢' : '🔴'} ${catName(id)} — ${idr(v.total)}`)
+      lines.push(`${i + 1}. ${v.type === 'income' ? '🟢' : '🔴'} ${escHtml(catName(id))} — ${idr(v.total)}`)
     })
   } else {
     lines.push('', 'Belum ada transaksi pada rentang ini.')
@@ -147,6 +147,12 @@ const HELP = [
 
 function idr(n) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
+}
+
+// Escape untuk pesan Telegram parse_mode=HTML: nama kategori/dompet dibuat user
+// dan diinterpolasi ke pesan, tanpa escape bisa merusak format / menyisipkan link.
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 async function getUserData(db, uid) {
@@ -236,7 +242,7 @@ export async function handleTelegramUpdate(db, update) {
       return
     }
     await db.collection('users').doc(uid).collection('transactions').doc(target.id).delete()
-    await tgSend(chatId, `↩️ Dibatalkan: ${target.type === 'income' ? 'Masuk' : 'Keluar'} ${idr(target.amount)} (${target.categoryId}).`)
+    await tgSend(chatId, `↩️ Dibatalkan: ${target.type === 'income' ? 'Masuk' : 'Keluar'} ${idr(target.amount)} (${escHtml(target.categoryId)}).`)
     return
   }
 
@@ -298,7 +304,7 @@ export async function handleTelegramUpdate(db, update) {
     })
     await tgSend(
       chatId,
-      `✅ Tercatat: <b>${d.type === 'income' ? 'Masuk' : 'Keluar'} ${idr(d.amount)}</b>\n${d.categoryName} • ${d.walletName}\n<i>Ketik /batal untuk membatalkan (10 menit).</i>`,
+      `✅ Tercatat: <b>${d.type === 'income' ? 'Masuk' : 'Keluar'} ${idr(d.amount)}</b>\n${escHtml(d.categoryName)} • ${escHtml(d.walletName)}\n<i>Ketik /batal untuk membatalkan (10 menit).</i>`,
     )
   } catch {
     await tgSend(chatId, 'Gagal menyimpan (izin database?). Pastikan firestore.rules sudah publish.')

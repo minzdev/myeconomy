@@ -14,6 +14,7 @@ service cloud.firestore {
         // memakainya di read membuat get/list selalu ditolak
         allow read: if isOwner(uid);
         allow create, update: if isOwner(uid)
+          && request.resource.data.amount is number
           && request.resource.data.amount > 0;
         allow delete: if isOwner(uid);
       }
