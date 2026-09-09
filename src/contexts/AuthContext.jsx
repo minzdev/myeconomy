@@ -80,14 +80,22 @@ export function AuthProvider({ children }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       })
-      if (r.ok) return
-      // 503 = email service belum setup -> fallback; error lain lempar ke UI
-      if (r.status !== 503) {
+      // Pastikan respons benar JSON dari function, bukan halaman index.html
+      // (terjadi bila redirect /api/* belum ter-deploy di Netlify).
+      const ctype = r.headers.get('content-type') || ''
+      if (r.ok && ctype.includes('application/json')) return
+      if (r.ok) {
+        console.warn('[reset] /api/auth/reset-email mengembalikan HTML, bukan JSON. Redirect Netlify mungkin belum ter-deploy.')
+      } else if (r.status !== 503) {
+        // 503 = email service belum setup -> fallback; error lain lempar ke UI
         const data = await r.json().catch(() => ({}))
         throw new Error(data.error || 'Gagal mengirim email reset')
+      } else {
+        console.warn('[reset] backend 503, fallback ke email Firebase bawaan.')
       }
     } catch (e) {
       if (e.message && e.message !== 'Failed to fetch') throw e
+      console.warn('[reset] backend tidak terjangkau, fallback ke email Firebase bawaan.')
       // network error (backend tidak jalan, mis. dev lokal) -> fallback
     }
     return sendPasswordResetEmail(auth, email)
