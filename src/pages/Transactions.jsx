@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from 'react-query'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { listTransactions, filterTx, resolveDateRange, addTransaction, updateTransaction, removeTransaction } from '../lib/transactions.js'
@@ -46,6 +46,26 @@ export default function Transactions() {
   const { data: wallets = [] } = useQuery(['wallets', uid], () => listWallets(uid))
   const refresh = () => qc.invalidateQueries(['tx', uid])
 
+  const formOpen = adding || !!editing
+  const closeForm = () => { setAdding(false); setEditing(null); setSubmitErr('') }
+  const openAdd = () => { setEditing(null); setAdding(true); setSubmitErr('') }
+  const openEdit = (t) => { setAdding(false); setEditing(t); setSubmitErr('') }
+
+  // Modal form harus selalu terlihat + bisa ditutup pakai Escape.
+  // Sebelumnya form inline di atas halaman sehingga klik Edit dari daftar
+  // bawah terlihat seperti "tidak muncul apa-apa".
+  useEffect(() => {
+    if (!formOpen) return
+    const onKey = (e) => { if (e.key === 'Escape') closeForm() }
+    window.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [formOpen]) // eslint-disable-line react-hooks/exhaustive-deps
+
   if (isLoading) return <Loading />
   const range = resolveDateRange(datePreset, { month, start, end })
   const list = filterTx(all, {
@@ -60,7 +80,7 @@ export default function Transactions() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-        <BrutalButton color="bg-brutal-yellow w-full sm:w-auto" onClick={() => setAdding(true)} className="min-h-[48px] text-sm">
+        <BrutalButton color="bg-brutal-yellow w-full sm:w-auto" onClick={openAdd} className="min-h-[48px] text-sm">
           + Tambah
         </BrutalButton>
         <BrutalButton
@@ -93,29 +113,60 @@ export default function Transactions() {
         </p>
       )}
 
-      {(adding || editing) && (
-        <BrutalCard color="bg-white" className="p-4 sm:p-5">
-          {submitErr && <p role="alert" className="text-sm font-bold bg-red-300 border-2 border-black rounded-lg p-2 mb-3">{submitErr}</p>}
-          <TransactionForm
-            key={editing ? `edit-${editing.id}` : 'new'}
-            categories={cats}
-            wallets={wallets}
-            initial={editing || {}}
-            onCancel={() => { setAdding(false); setEditing(null) }}
-            onSubmit={async (p) => {
-              setSubmitErr('')
-              try {
-                if (editing) await updateTransaction(uid, editing.id, p)
-                else await addTransaction(uid, p)
-                setAdding(false); setEditing(null); refresh()
-                setSavedTick(Date.now())
-                setTimeout(() => setSavedTick(0), 4000)
-              } catch (e2) {
-                setSubmitErr(friendlyDbError(e2))
-              }
-            }}
-          />
-        </BrutalCard>
+      {formOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center p-3 sm:p-4 z-50"
+          onClick={closeForm}
+          role="dialog"
+          aria-modal="true"
+          aria-label={editing ? 'Edit transaksi' : 'Tambah transaksi'}
+        >
+          <div
+            className="card-brutal p-4 sm:p-5 bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <div className="min-w-0">
+                <h2 className="font-display text-base sm:text-lg leading-tight">
+                  {editing ? '✏️ Edit Transaksi' : '➕ Tambah Transaksi'}
+                </h2>
+                {editing && (
+                  <p className="text-[11px] sm:text-xs font-bold text-neutral-600 truncate mt-0.5">
+                    {fmtDate(String(editing.date || '').slice(0, 10))} • {formatIDR(editing.amount)}
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={closeForm}
+                aria-label="Tutup form"
+                className="btn-brutal bg-white rounded-lg px-3 py-2 text-sm min-h-[40px] shrink-0"
+              >
+                ✕
+              </button>
+            </div>
+            {submitErr && <p role="alert" className="text-sm font-bold bg-red-300 border-2 border-black rounded-lg p-2 mb-3">{submitErr}</p>}
+            <TransactionForm
+              key={editing ? `edit-${editing.id}` : 'new'}
+              categories={cats}
+              wallets={wallets}
+              initial={editing || {}}
+              onCancel={closeForm}
+              onSubmit={async (p) => {
+                setSubmitErr('')
+                try {
+                  if (editing) await updateTransaction(uid, editing.id, p)
+                  else await addTransaction(uid, p)
+                  closeForm(); refresh()
+                  setSavedTick(Date.now())
+                  setTimeout(() => setSavedTick(0), 4000)
+                } catch (e2) {
+                  setSubmitErr(friendlyDbError(e2))
+                }
+              }}
+            />
+          </div>
+        </div>
       )}
 
       <BrutalCard className="p-4 sm:p-5">
@@ -184,7 +235,7 @@ export default function Transactions() {
                 <p className="text-[11px] sm:text-xs truncate">{new Date(t.date).toLocaleDateString('id-ID')} • {walletName(wallets, t.walletId || t.wallet)} • {t.note}</p>
               </div>
               <div className="flex gap-1 shrink-0">
-                <button className="btn-brutal bg-brutal-blue rounded-lg text-xs px-2 sm:px-3 py-2 min-h-[40px]" onClick={() => setEditing(t)}>Edit</button>
+                <button className="btn-brutal bg-brutal-blue rounded-lg text-xs px-2 sm:px-3 py-2 min-h-[40px]" onClick={() => openEdit(t)}>Edit</button>
                 <button className="btn-brutal bg-red-300 rounded-lg text-xs px-2 sm:px-3 py-2 min-h-[40px]" onClick={() => setDelId(t.id)}>Hapus</button>
               </div>
             </div>
